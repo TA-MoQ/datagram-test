@@ -53,18 +53,13 @@ func (s *Session) runAcceptUni(ctx context.Context) (err error) {
 			return fmt.Errorf("failed to accept unidirectional stream: %w", err)
 		}
 
-		sendStream, err := s.inner.OpenUniStreamSync(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to open unidirectional stream: %w", err)
-		}
-
 		s.streams.Add(func(ctx context.Context) (err error) {
-			return s.handleStream(ctx, stream, sendStream)
+			return s.handleStream(ctx, stream)
 		})
 	}
 }
 
-func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveStream, sendStream webtransport.SendStream) (err error) {
+func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveStream) (err error) {
 	defer func() {
 		if err != nil {
 			stream.CancelRead(1)
@@ -80,16 +75,11 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 			return fmt.Errorf("failed to read atom header: %w", err)
 		}
 
-		if string(message[0:8]) == "PINGPING" {
-			sendStream.Write([]byte("PONGPONG"))
-			continue
-		}
-
 		if string(message[0:8]) != "RUNTESTS" {
 			return fmt.Errorf("unknown cmd")
 		}
 
-		go s.runFakeAudio(sendStream)
+		go s.runFakeAudio(ctx)
 		go s.runTests()
 	}
 }
@@ -109,7 +99,12 @@ func (s *Session) runSingleTest(totalFragments int) {
 	}
 }
 
-func (s *Session) runFakeAudio(stream webtransport.SendStream) {
+func (s *Session) runFakeAudio(ctx context.Context) error {
+	stream, err := s.inner.OpenUniStreamSync(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to open unidirectional stream: %w", err)
+	}
+
 	for {
 		stream.Write([]byte(strings.Repeat("a", 5500))) // ~128kbps
 		time.Sleep(40 * time.Millisecond)               // 1 PTS
