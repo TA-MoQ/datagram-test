@@ -102,7 +102,7 @@ func (s *Session) runSingleTest(totalFragments int) {
 			buf = append(buf, uint8(fragmentNum))
 			buf = append(buf, strings.Repeat("a", 1200)...)
 
-			s.inner.SendDatagram(buf)
+			go s.inner.SendDatagram(buf)
 		}
 		time.Sleep(40 * time.Millisecond) // 1 PTS
 	}
