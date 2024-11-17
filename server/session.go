@@ -53,7 +53,7 @@ func (s *Session) runAcceptUni(ctx context.Context) (err error) {
 			return fmt.Errorf("failed to accept unidirectional stream: %w", err)
 		}
 
-		sendStream, err := s.inner.OpenUniStream()
+		sendStream, err := s.inner.OpenUniStreamSync(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to open unidirectional stream: %w", err)
 		}
