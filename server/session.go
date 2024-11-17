@@ -89,8 +89,8 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 			return fmt.Errorf("unknown cmd")
 		}
 
-		s.runFakeAudio(sendStream)
-		s.runTests()
+		go s.runFakeAudio(sendStream)
+		go s.runTests()
 	}
 }
 
