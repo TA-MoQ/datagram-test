@@ -89,6 +89,7 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 			return fmt.Errorf("unknown cmd")
 		}
 
+		s.runFakeAudio(sendStream)
 		s.runTests()
 	}
 }
@@ -105,6 +106,13 @@ func (s *Session) runSingleTest(totalFragments int) {
 			go s.inner.SendDatagram(buf)
 		}
 		time.Sleep(40 * time.Millisecond) // 1 PTS
+	}
+}
+
+func (s *Session) runFakeAudio(stream webtransport.SendStream) {
+	for {
+		stream.Write([]byte(strings.Repeat("a", 5500))) // ~128kbps
+		time.Sleep(40 * time.Millisecond)               // 1 PTS
 	}
 }
 
