@@ -3,16 +3,22 @@ import "./style.css";
 const logBox = document.getElementById("log")! as HTMLTextAreaElement;
 const reportBox = document.getElementById("report")! as HTMLDivElement;
 
-function generateReportBox() {
+function generateReportBox(totalFragments: number): [HTMLDivElement, boolean] {
+  const existing = document.getElementById(`boxes-${totalFragments}`);
+  if (existing) {
+    return [existing as HTMLDivElement, true];
+  }
+
   const container = document.createElement("div");
   container.className = "boxes";
+  container.id = `boxes-${totalFragments}`;
 
   for (let i = 0; i < 100; i++) {
     const box = document.createElement("div");
     box.className = "box";
     container.appendChild(box);
   }
-  return container;
+  return [container, false];
 }
 
 async function connectWebTransport(url: string) {
@@ -76,7 +82,6 @@ function logFragment(
 }
 
 function dumpInfo(shouldLog = true) {
-  reportBox.innerHTML = "";
   fragmentData.forEach((value, key) => {
     if (shouldLog) log(`Test: ${key} fragments`);
     drawBoxes(key);
@@ -93,7 +98,7 @@ function dumpInfo(shouldLog = true) {
 }
 
 function drawBoxes(totalFragments: number) {
-  const container = generateReportBox();
+  const [container, alreadyExisting] = generateReportBox(totalFragments);
   const boxes = Array.from(container.children) as HTMLDivElement[];
   const data = fragmentData.get(totalFragments)!;
   data.forEach((fragment, i) => {
@@ -109,9 +114,11 @@ function drawBoxes(totalFragments: number) {
   const header = document.createElement("p");
   header.textContent = `Test: ${totalFragments} fragments`;
 
-  reportBox.appendChild(header);
-  reportBox.appendChild(container);
-  reportBox.appendChild(document.createElement("hr"));
+  if (!alreadyExisting) {
+    reportBox.appendChild(header);
+    reportBox.appendChild(container);
+    reportBox.appendChild(document.createElement("hr"));
+  }
 }
 
 async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
@@ -128,4 +135,6 @@ async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
 }
 
 document.getElementById("start")?.addEventListener("click", main);
-document.getElementById("dump")?.addEventListener("click", dumpInfo);
+document
+  .getElementById("dump")
+  ?.addEventListener("click", () => dumpInfo(true));
