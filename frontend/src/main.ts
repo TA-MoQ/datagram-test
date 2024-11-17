@@ -47,9 +47,9 @@ async function main() {
   await writer.write(new TextEncoder().encode("RUNTESTS"));
 
   const interval = setInterval(async () => {
-    await writer.write(new TextEncoder().encode("PINGPING"));
-    await reader.read();
-  }, 1000);
+    const z = await reader.read();
+    console.log(z.done);
+  }, 100);
 
   transport.closed.then(() => {
     clearInterval(interval);
