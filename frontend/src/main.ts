@@ -27,8 +27,11 @@ async function connectWebTransport(url: string) {
   return transport;
 }
 
-function log(message: string) {
-  logBox.value += message + "\n";
+function log(message: string, newLine = true) {
+  logBox.value += message;
+  if (newLine) {
+    logBox.value += "\n";
+  }
 }
 
 async function main() {
@@ -46,17 +49,9 @@ async function main() {
   log("Sending RUNTESTS");
   await writer.write(new TextEncoder().encode("RUNTESTS"));
 
-  const interval = setInterval(async () => {
-    const z = await reader.read();
-    console.log(z.done);
-  }, 100);
-
-  transport.closed.then(() => {
-    clearInterval(interval);
-  });
-
   const datagramReader = transport.datagrams.readable.getReader();
   handleDatagram(datagramReader);
+  handleStream(reader);
 }
 
 const fragmentData: Map<number, boolean[][]> = new Map();
@@ -134,6 +129,28 @@ async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
     const [totalFragments, testNum, fragmentNum, ...rest] = value;
     if (rest.length == 1200) {
       logFragment(totalFragments, testNum, fragmentNum);
+    }
+  }
+}
+
+async function handleStream(
+  reader: ReadableStreamDefaultReader<ReadableStreamDefaultReader<Uint8Array>>
+) {
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    // @ts-ignore
+    const streamReader = value.getReader() as ReadableStream<Uint8Array>;
+    while (true) {
+      const { value, done } = await streamReader.read();
+      if (done) {
+        break;
+      }
+      new TextDecoder().decode(value);
+      // log(".", false);
     }
   }
 }
