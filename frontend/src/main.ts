@@ -83,17 +83,21 @@ function logFragment(
 
 function dumpInfo(shouldLog = true) {
   fragmentData.forEach((value, key) => {
-    if (shouldLog) log(`Test: ${key} fragments`);
+    if (shouldLog) log(`============ ${key} fragments ============`);
     drawBoxes(key);
+
+    let totalFailed = 0;
     value.forEach((fragment, i) => {
       const dropped = fragment.filter((v) => !v).length;
-      if (shouldLog)
-        log(
-          `Test ${i}: ${dropped}/${fragment.length}: ${
-            (dropped / fragment.length) * 100
-          }%`
-        );
+      if (dropped > 0) {
+        totalFailed += 1;
+      }
+
+      if (shouldLog && dropped > 0)
+        log(`Test ${i} failed: ${dropped}/${fragment.length} packets dropped`);
     });
+
+    if (shouldLog) log(`Total failed tests: ${totalFailed}/${value.length}`);
   });
 }
 
