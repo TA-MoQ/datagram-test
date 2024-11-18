@@ -75,12 +75,10 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 			return fmt.Errorf("failed to read atom header: %w", err)
 		}
 
-		if string(message[0:8]) != "RUNTESTS" {
-			return fmt.Errorf("unknown cmd")
+		if string(message[0:8]) == "RUNTESTS" {
+			go s.runFakeAudio(ctx)
+			go s.runTests()
 		}
-
-		go s.runFakeAudio(ctx)
-		go s.runTests()
 	}
 }
 
