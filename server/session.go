@@ -86,15 +86,17 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 
 func (s *Session) runSingleTest(totalFragments int) {
 	for testNum := range 100 {
-		for fragmentNum := range totalFragments {
-			var buf []byte
-			buf = append(buf, uint8(totalFragments))
-			buf = append(buf, uint8(testNum))
-			buf = append(buf, uint8(fragmentNum))
-			buf = append(buf, strings.Repeat("a", 1200)...)
+		go func() {
+			for fragmentNum := range totalFragments {
+				var buf []byte
+				buf = append(buf, uint8(totalFragments))
+				buf = append(buf, uint8(testNum))
+				buf = append(buf, uint8(fragmentNum))
+				buf = append(buf, strings.Repeat("a", 1200)...)
 
-			go s.inner.SendDatagram(buf)
-		}
+				s.inner.SendDatagram(buf)
+			}
+		}()
 		time.Sleep(40 * time.Millisecond) // 1 PTS
 	}
 }
@@ -106,8 +108,8 @@ func (s *Session) runFakeAudio(ctx context.Context) error {
 	}
 
 	for {
-		stream.Write([]byte(strings.Repeat("a", 5500))) // ~128kbps
-		time.Sleep(40 * time.Millisecond)               // 1 PTS
+		go stream.Write([]byte(strings.Repeat("a", 5500))) // ~128kbps
+		time.Sleep(40 * time.Millisecond)                  // 1 PTS
 	}
 }
 
