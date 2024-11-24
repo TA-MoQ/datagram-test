@@ -231,7 +231,7 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
     ([totalFragments, values]) => {
       return {
         x: values.map((v) => v[0] / 1000),
-        y: values.map((v) => v[1]),
+        y: values.map((v) => v[1] / 1000),
         mode: "lines" as const,
         type: "scatter" as const,
         name: `${totalFragments} fragments`,
@@ -245,7 +245,7 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
       title: "Test duration (s)",
     },
     yaxis: {
-      title: "Latency (ms)",
+      title: "Latency (m)",
     },
   });
 
