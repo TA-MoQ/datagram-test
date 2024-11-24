@@ -91,7 +91,7 @@ func (s *Session) runSingleTest(totalFragments int) {
 				buf = append(buf, uint8(totalFragments))
 				buf = append(buf, uint8(testNum))
 				buf = append(buf, uint8(fragmentNum))
-				buf = append(buf, uint8(t>>24), uint8(t>>16), uint8(t>>8), uint8(t))
+				buf = append(buf, uint8(t>>56&0xFF), uint8(t>>48&0xFF), uint8(t>>40&0xFF), uint8(t>>32&0xFF), uint8(t>>24&0xFF), uint8(t>>16&0xFF), uint8(t>>8&0xFF), uint8(t&0xFF))
 				buf = append(buf, strings.Repeat("a", 1200)...)
 
 				s.inner.SendDatagram(buf)
