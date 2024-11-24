@@ -1,4 +1,5 @@
 import "./style.css";
+// @ts-ignore grrr
 import Plotly from "plotly.js-dist";
 
 const logBox = document.getElementById("log")! as HTMLTextAreaElement;
@@ -276,6 +277,7 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
       const avg =
         values
           .filter((x) => x[0] != null && x[1] != null)
+          // @ts-ignore already checked
           .reduce((acc, v) => acc + (v[1] - v[0]), 0) / values.length;
       return {
         x: [totalFragments],
