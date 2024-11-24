@@ -58,6 +58,10 @@ async function main() {
 
 const fragmentData: Map<number, boolean[][]> = new Map();
 const latencyData: Map<number, [time: number, delta: number][]> = new Map();
+const finishLatencyData: Map<
+  number,
+  [startTime: number | null, endTime: number | null][]
+> = new Map();
 let startTime: number = 0;
 
 function logFragment(
@@ -66,11 +70,29 @@ function logFragment(
   fragmentNum: number,
   time: number
 ) {
+  const t = Date.now();
+
   if (!latencyData.has(totalFragment)) {
     latencyData.set(totalFragment, []);
   }
 
-  const t = Date.now();
+  if (!finishLatencyData.has(totalFragment)) {
+    const z = [];
+    for (let i = 0; i < 100; i++) {
+      z.push([null, null]);
+    }
+    // @ts-ignore: type is correct
+    finishLatencyData.set(totalFragment, z);
+  }
+
+  finishLatencyData.get(totalFragment)![testNum][0] = Math.min(
+    finishLatencyData.get(totalFragment)![testNum][0] ?? 99999999999999999999,
+    time / 1000
+  );
+  finishLatencyData.get(totalFragment)![testNum][1] = Math.max(
+    finishLatencyData.get(totalFragment)![testNum][1] ?? 0,
+    t / 1000
+  );
   latencyData.get(totalFragment)!.push([t - startTime, t - time]);
 
   let k = fragmentData.has(totalFragment);
@@ -222,6 +244,55 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
     },
     yaxis: {
       title: "Latency (ms)",
+    },
+  });
+
+  // create a bar plot for average latency per fragments
+  const avgData = Array.from(latencyData.entries()).map(
+    ([totalFragments, values]) => {
+      const avg = values.reduce((acc, v) => acc + v[1], 0) / values.length;
+      return {
+        x: [totalFragments],
+        y: [avg / 1000],
+        type: "bar" as const,
+        name: `${totalFragments} fragments`,
+      };
+    }
+  );
+
+  Plotly.newPlot("avgplot", avgData, {
+    title: "Average fragment latency per test",
+    xaxis: {
+      title: "Number of fragments",
+    },
+    yaxis: {
+      title: "Average latency (s)",
+    },
+  });
+
+  // create a for bar plot for finish latency per fragments
+  const finishData = Array.from(finishLatencyData.entries()).map(
+    ([totalFragments, values]) => {
+      const avg =
+        values
+          .filter((x) => x[0] != null && x[1] != null)
+          .reduce((acc, v) => acc + (v[1] - v[0]), 0) / values.length;
+      return {
+        x: [totalFragments],
+        y: [avg],
+        type: "bar" as const,
+        name: `${totalFragments} fragments`,
+      };
+    }
+  );
+
+  Plotly.newPlot("finishplot", finishData, {
+    title: "Finish latency per test",
+    xaxis: {
+      title: "Number of fragments",
+    },
+    yaxis: {
+      title: "Finish latency (s)",
     },
   });
 });
