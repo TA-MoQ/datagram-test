@@ -206,8 +206,9 @@ async function handleStream(
       break;
     }
 
-    // @ts-ignore
-    const streamReader = value.getReader() as ReadableStream<Uint8Array>;
+    const streamReader =
+      // @ts-ignore: type is correct
+      value.getReader() as ReadableStreamDefaultReader<Uint8Array>;
     while (true) {
       const { value, done } = await streamReader.read();
       if (done) {
