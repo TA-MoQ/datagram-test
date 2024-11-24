@@ -87,9 +87,11 @@ func (s *Session) runSingleTest(totalFragments int) {
 		go func() {
 			for fragmentNum := range totalFragments {
 				var buf []byte
+				t := time.Now().UnixMilli()
 				buf = append(buf, uint8(totalFragments))
 				buf = append(buf, uint8(testNum))
 				buf = append(buf, uint8(fragmentNum))
+				buf = append(buf, uint8(t>>24), uint8(t>>16), uint8(t>>8), uint8(t))
 				buf = append(buf, strings.Repeat("a", 1200)...)
 
 				s.inner.SendDatagram(buf)

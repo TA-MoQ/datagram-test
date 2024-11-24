@@ -55,11 +55,19 @@ async function main() {
 }
 
 const fragmentData: Map<number, boolean[][]> = new Map();
+const latencyData: Map<number, number[]> = new Map();
+
 function logFragment(
   totalFragment: number,
   testNum: number,
-  fragmentNum: number
+  fragmentNum: number,
+  time: number
 ) {
+  if (!latencyData.has(totalFragment)) {
+    latencyData.set(totalFragment, []);
+  }
+  latencyData.get(totalFragment)!.push(time);
+
   let k = fragmentData.has(totalFragment);
   if (!k) {
     log(`Test for ${totalFragment} started`);
@@ -126,9 +134,15 @@ async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
     if (done) {
       break;
     }
-    const [totalFragments, testNum, fragmentNum, ...rest] = value;
+    const [totalFragments, testNum, fragmentNum, n1, n2, n3, n4, ...rest] =
+      value;
     if (rest.length == 1200) {
-      logFragment(totalFragments, testNum, fragmentNum);
+      logFragment(
+        totalFragments,
+        testNum,
+        fragmentNum,
+        (n1 << 24) | (n2 << 16) | (n3 << 8) | n4
+      );
     }
   }
 }
