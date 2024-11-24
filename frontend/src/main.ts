@@ -1,4 +1,5 @@
 import "./style.css";
+import Plotly from "plotly.js-dist";
 
 const logBox = document.getElementById("log")! as HTMLTextAreaElement;
 const reportBox = document.getElementById("report")! as HTMLDivElement;
@@ -48,6 +49,7 @@ async function main() {
   const writer = stream.getWriter();
   log("Sending RUNTESTS");
   await writer.write(new TextEncoder().encode("RUNTESTS"));
+  startTime = Date.now();
 
   const datagramReader = transport.datagrams.readable.getReader();
   handleDatagram(datagramReader);
@@ -55,7 +57,8 @@ async function main() {
 }
 
 const fragmentData: Map<number, boolean[][]> = new Map();
-const latencyData: Map<number, number[]> = new Map();
+const latencyData: Map<number, [time: number, delta: number][]> = new Map();
+let startTime: number = 0;
 
 function logFragment(
   totalFragment: number,
@@ -66,7 +69,9 @@ function logFragment(
   if (!latencyData.has(totalFragment)) {
     latencyData.set(totalFragment, []);
   }
-  latencyData.get(totalFragment)!.push(time);
+
+  const t = Date.now();
+  latencyData.get(totalFragment)!.push([t - startTime, t - time]);
 
   let k = fragmentData.has(totalFragment);
   if (!k) {
@@ -134,14 +139,36 @@ async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
     if (done) {
       break;
     }
-    const [totalFragments, testNum, fragmentNum, n1, n2, n3, n4, ...rest] =
-      value;
+    const [
+      totalFragments,
+      testNum,
+      fragmentNum,
+      n1,
+      n2,
+      n3,
+      n4,
+      n5,
+      n6,
+      n7,
+      n8,
+      ...rest
+    ] = value;
     if (rest.length == 1200) {
       logFragment(
         totalFragments,
         testNum,
         fragmentNum,
-        (n1 << 24) | (n2 << 16) | (n3 << 8) | n4
+        parseInt(
+          n1.toString(2).padStart(8, "0") +
+            n2.toString(2).padStart(8, "0") +
+            n3.toString(2).padStart(8, "0") +
+            n4.toString(2).padStart(8, "0") +
+            n5.toString(2).padStart(8, "0") +
+            n6.toString(2).padStart(8, "0") +
+            n7.toString(2).padStart(8, "0") +
+            n8.toString(2).padStart(8, "0"),
+          2
+        )
       );
     }
   }
@@ -173,3 +200,28 @@ document.getElementById("start")?.addEventListener("click", main);
 document
   .getElementById("dump")
   ?.addEventListener("click", () => dumpInfo(true));
+
+// create plot with plotly of latency data
+document.getElementById("plotbtn")?.addEventListener("click", () => {
+  const data = Array.from(latencyData.entries()).map(
+    ([totalFragments, values]) => {
+      return {
+        x: values.map((v) => v[0] / 1000),
+        y: values.map((v) => v[1]),
+        mode: "lines" as const,
+        type: "scatter" as const,
+        name: `${totalFragments} fragments`,
+      };
+    }
+  );
+
+  Plotly.newPlot("plot", data, {
+    title: "Latency data",
+    xaxis: {
+      title: "Test duration (s)",
+    },
+    yaxis: {
+      title: "Latency (ms)",
+    },
+  });
+});
