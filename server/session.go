@@ -72,19 +72,37 @@ func (s *Session) handleStream(ctx context.Context, stream webtransport.ReceiveS
 		if errors.Is(err, io.EOF) {
 			return nil
 		} else if err != nil {
-			return fmt.Errorf("failed to read atom header: %w", err)
+			return fmt.Errorf("failed to read cmd: %w", err)
 		}
 
 		if string(message[0:8]) == "RUNTESTS" {
+			var options [2]byte
+			_, err = io.ReadFull(stream, options[:])
+			if errors.Is(err, io.EOF) {
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("failed to read options: %w", err)
+			}
+
 			go s.runFakeAudio(ctx)
-			go s.runTests()
+			go s.runTests(string(options[0]) == "1", string(options[1]) == "1")
 		}
 	}
 }
 
-func (s *Session) runSingleTest(totalFragments int) {
+func (s *Session) runSingleTest(totalFragments int, runWarmup, sleepBetweenFragments bool) {
 	for testNum := range 100 {
 		go func() {
+			if runWarmup {
+				garbage := []byte("WARPTESTthisisjustgarbagedatatotestonwhetherornotfirstpacketisalwaysdropped")
+				garbage = append(garbage, strings.Repeat("a", 1000)...)
+				s.inner.SendDatagram(garbage)
+				time.Sleep(500 * time.Microsecond)
+
+				s.inner.SendDatagram(garbage)
+				time.Sleep(500 * time.Microsecond)
+			}
+
 			for fragmentNum := range totalFragments {
 				var buf []byte
 				t := time.Now().UnixMilli()
@@ -95,6 +113,10 @@ func (s *Session) runSingleTest(totalFragments int) {
 				buf = append(buf, strings.Repeat("a", 1200)...)
 
 				s.inner.SendDatagram(buf)
+
+				if sleepBetweenFragments {
+					time.Sleep(500 * time.Microsecond)
+				}
 			}
 		}()
 		time.Sleep(40 * time.Millisecond) // 1 PTS
@@ -113,12 +135,12 @@ func (s *Session) runFakeAudio(ctx context.Context) error {
 	}
 }
 
-func (s *Session) runTests() {
-	s.runSingleTest(10)
-	s.runSingleTest(25)
-	s.runSingleTest(50)
-	s.runSingleTest(75)
-	s.runSingleTest(100)
-	s.runSingleTest(150)
-	s.runSingleTest(200)
+func (s *Session) runTests(runWarmup, sleepBetweenFragments bool) {
+	s.runSingleTest(10, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(25, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(50, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(75, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(100, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(150, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(200, runWarmup, sleepBetweenFragments)
 }
