@@ -4,6 +4,12 @@ import Plotly from "plotly.js-dist";
 
 const logBox = document.getElementById("log")! as HTMLTextAreaElement;
 const reportBox = document.getElementById("report")! as HTMLDivElement;
+const runWarmupCheckbox = document.getElementById(
+  "runWarmup"
+)! as HTMLInputElement;
+const sleepBetweenFragmentsCheckbox = document.getElementById(
+  "sleepBetweenFragments"
+)! as HTMLInputElement;
 
 function generateReportBox(totalFragments: number): [HTMLDivElement, boolean] {
   const existing = document.getElementById(`boxes-${totalFragments}`);
@@ -37,6 +43,7 @@ function log(message: string, newLine = true) {
 }
 
 async function main() {
+  prepareMaps();
   const urlParams = new URLSearchParams(window.location.search);
   const url = urlParams.get("url") || "https://localhost:4443";
   log(`Connecting to ${url}`);
@@ -50,6 +57,12 @@ async function main() {
   const writer = stream.getWriter();
   log("Sending RUNTESTS");
   await writer.write(new TextEncoder().encode("RUNTESTS"));
+  await writer.write(
+    new TextEncoder().encode(runWarmupCheckbox.checked ? "1" : "0")
+  );
+  await writer.write(
+    new TextEncoder().encode(sleepBetweenFragmentsCheckbox.checked ? "1" : "0")
+  );
   startTime = Date.now();
 
   const datagramReader = transport.datagrams.readable.getReader();
@@ -65,6 +78,30 @@ const finishLatencyData: Map<
 > = new Map();
 let startTime: number = 0;
 
+function prepareMaps() {
+  fragmentData.clear();
+  latencyData.clear();
+  finishLatencyData.clear();
+
+  const fragments = [10, 25, 50, 75, 100, 150, 200];
+  fragments.forEach((totalFragment) => {
+    latencyData.set(totalFragment, []);
+
+    const z = [];
+    for (let i = 0; i < 100; i++) {
+      z.push([null, null]);
+    }
+    // @ts-ignore: type is correct
+    finishLatencyData.set(totalFragment, z);
+
+    const arr = new Array(100);
+    for (let i = 0; i < 100; i++) {
+      arr[i] = new Array(totalFragment).fill(false);
+    }
+    fragmentData.set(totalFragment, arr);
+  });
+}
+
 function logFragment(
   totalFragment: number,
   testNum: number,
@@ -72,20 +109,6 @@ function logFragment(
   time: number
 ) {
   const t = Date.now();
-
-  if (!latencyData.has(totalFragment)) {
-    latencyData.set(totalFragment, []);
-  }
-
-  if (!finishLatencyData.has(totalFragment)) {
-    const z = [];
-    for (let i = 0; i < 100; i++) {
-      z.push([null, null]);
-    }
-    // @ts-ignore: type is correct
-    finishLatencyData.set(totalFragment, z);
-  }
-
   finishLatencyData.get(totalFragment)![testNum][0] = Math.min(
     finishLatencyData.get(totalFragment)![testNum][0] ?? 99999999999999999999,
     time / 1000
@@ -95,17 +118,6 @@ function logFragment(
     t / 1000
   );
   latencyData.get(totalFragment)!.push([t - startTime, t - time]);
-
-  let k = fragmentData.has(totalFragment);
-  if (!k) {
-    log(`Test for ${totalFragment} started`);
-    const arr = new Array(100);
-    for (let i = 0; i < 100; i++) {
-      arr[i] = new Array(totalFragment).fill(false);
-    }
-    fragmentData.set(totalFragment, arr);
-    return;
-  }
 
   const data = fragmentData.get(totalFragment)!;
   data[testNum][fragmentNum] = true;
@@ -162,6 +174,11 @@ async function handleDatagram(reader: ReadableStreamDefaultReader<Uint8Array>) {
     if (done) {
       break;
     }
+
+    if (new TextDecoder().decode(value).startsWith("WARPTEST")) {
+      continue;
+    }
+
     const [
       totalFragments,
       testNum,

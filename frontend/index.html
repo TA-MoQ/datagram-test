@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -15,6 +15,17 @@
         <button id="start">Start</button>
         <button id="dump">Dump Information</button>
         <button id="plotbtn">Plot</button>
+
+        <div>
+          <input type="checkbox" id="runWarmup" checked />
+          <label for="runWarmup">Warm-up before sending data</label>
+        </div>
+
+        <div>
+          <input type="checkbox" id="sleepBetweenFragments" checked />
+          <label for="sleepBetweenFragments">Sleep between fragments</label>
+        </div>
+
         <textarea id="log" readonly rows="20"></textarea>
         <div id="plot"></div>
         <div id="avgplot"></div>
