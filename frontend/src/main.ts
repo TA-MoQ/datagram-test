@@ -316,3 +316,57 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
     },
   });
 });
+
+function downloadAsCsv(csv: string, headers: string[]) {
+  csv = headers.join(",") + "\n" + csv;
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  // download
+  a.href = url;
+  a.download = "latency.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("export")!.addEventListener("click", () => {
+  // export all map data as csv
+  const csv = Array.from(latencyData.entries())
+    .map(([totalFragments, values]) => {
+      return values.map((v) => `${totalFragments},${v[0]},${v[1]}`).join("\n");
+    })
+    .join("\n");
+  downloadAsCsv(csv, ["totalFragments", "time", "delta"]);
+
+  // export all finish latency data as csv
+  const finishCsv = Array.from(finishLatencyData.entries())
+    .map(([totalFragments, values]) => {
+      return values
+        .map((v) => `${totalFragments},${v[0] ?? ""},${v[1] ?? ""}`)
+        .join("\n");
+    })
+    .join("\n");
+  downloadAsCsv(finishCsv, ["totalFragments", "startTime", "endTime"]);
+
+  // export all fragment data as csv
+  const fragmentCsv = Array.from(fragmentData.entries())
+    .map(([totalFragments, values]) => {
+      return values
+        .map((v, i) => {
+          return v
+            .map((x, j) => `${totalFragments},${i},${j},${x ? 1 : 0}`)
+            .join("\n");
+        })
+        .join("\n");
+    })
+    .join("\n");
+
+  downloadAsCsv(fragmentCsv, [
+    "totalFragments",
+    "testNum",
+    "fragmentNum",
+    "received",
+  ]);
+});
