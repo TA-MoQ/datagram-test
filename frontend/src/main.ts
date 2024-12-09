@@ -78,12 +78,14 @@ const finishLatencyData: Map<
 > = new Map();
 let startTime: number = 0;
 
+// const fragments = [10, 25, 50, 75, 100, 150, 200];
+const fragments = [10, 25, 30, 50];
+
 function prepareMaps() {
   fragmentData.clear();
   latencyData.clear();
   finishLatencyData.clear();
 
-  const fragments = [10, 25, 50, 75, 100, 150, 200];
   fragments.forEach((totalFragment) => {
     latencyData.set(totalFragment, []);
 
@@ -242,15 +244,140 @@ document
   .getElementById("dump")
   ?.addEventListener("click", () => dumpInfo(true));
 
-// create plot with plotly of latency data
+// // create plot with plotly of latency data
+// document.getElementById("plotbtn")?.addEventListener("click", () => {
+//   const data = Array.from(latencyData.entries()).map(
+//     ([totalFragments, values]) => {
+//       return {
+//         x: values.map((v) => v[0] / 1000),
+//         y: values.map((v) => v[1] / 1000),
+//         mode: "lines" as const,
+//         type: "scatter" as const,
+//         name: `${totalFragments} fragments`,
+//       };
+//     }
+//   );
+
+//   Plotly.newPlot("plot", data, {
+//     title: "Latency data",
+//     xaxis: {
+//       title: "Test duration (s)",
+//     },
+//     yaxis: {
+//       title: "Latency (m)",
+//     },
+//   });
+
+//   // create a bar plot for average latency per fragments
+//   const avgData = Array.from(latencyData.entries()).map(
+//     ([totalFragments, values]) => {
+//       const avg = values.reduce((acc, v) => acc + v[1], 0) / values.length;
+//       return {
+//         x: [totalFragments],
+//         y: [avg / 1000],
+//         type: "bar" as const,
+//         name: `${totalFragments} fragments`,
+//       };
+//     }
+//   );
+
+//   Plotly.newPlot("avgplot", avgData, {
+//     title: "Average fragment latency per test",
+//     xaxis: {
+//       title: "Number of fragments",
+//     },
+//     yaxis: {
+//       title: "Average latency (s)",
+//     },
+//   });
+
+//   // create a for bar plot for finish latency per fragments
+//   const finishData = Array.from(finishLatencyData.entries()).map(
+//     ([totalFragments, values]) => {
+//       const avg =
+//         values
+//           .filter((x) => x[0] != null && x[1] != null)
+//           // @ts-ignore already checked
+//           .reduce((acc, v) => acc + (v[1] - v[0]), 0) / values.length;
+//       return {
+//         x: [totalFragments],
+//         y: [avg],
+//         type: "bar" as const,
+//         name: `${totalFragments} fragments`,
+//       };
+//     }
+//   );
+
+//   Plotly.newPlot("finishplot", finishData, {
+//     title: "Finish latency per test",
+//     xaxis: {
+//       title: "Number of fragments",
+//     },
+//     yaxis: {
+//       title: "Finish latency (s)",
+//     },
+//   });
+
+//   const dropRateData = Array.from(fragmentData.entries()).map(
+//     ([totalFragments, testResults]) => ({
+//       x: [totalFragments],
+//       y: [
+//         (testResults.reduce(
+//           (acc, test) =>
+//             acc + test.filter((fragment) => !fragment).length / test.length,
+//           0
+//         ) /
+//           testResults.length) *
+//           100,
+//       ],
+//       type: "bar",
+//       name: `${totalFragments} fragments`,
+//     })
+//   );
+
+//   Plotly.newPlot("dropplot", dropRateData, {
+//     title: "Average Drop Rate per Fragment Count",
+//     xaxis: { title: "Number of fragments" },
+//     yaxis: {
+//       title: "Drop rate (%)",
+//       range: [0, 100],
+//     },
+//   });
+
+//   const failedTestRateData = Array.from(fragmentData.entries()).map(
+//     ([totalFragments, testResults]) => ({
+//       x: [totalFragments],
+//       y: [
+//         (testResults.filter((test) => test.some((fragment) => !fragment))
+//           .length /
+//           testResults.length) *
+//           100,
+//       ],
+//       type: "bar",
+//       name: `${totalFragments} fragments`,
+//     })
+//   );
+
+//   Plotly.newPlot("failplot", failedTestRateData, {
+//     title: "Failed Test Rate per Fragment Count",
+//     xaxis: { title: "Number of fragments" },
+//     yaxis: {
+//       title: "Failed test rate (%)",
+//       range: [0, 100],
+//     },
+//   });
+// });
+
+// Modify the plotting code section:
 document.getElementById("plotbtn")?.addEventListener("click", () => {
+  // Latency scatter plot
   const data = Array.from(latencyData.entries()).map(
     ([totalFragments, values]) => {
       return {
         x: values.map((v) => v[0] / 1000),
         y: values.map((v) => v[1] / 1000),
-        mode: "lines" as const,
-        type: "scatter" as const,
+        mode: "lines",
+        type: "scatter",
         name: `${totalFragments} fragments`,
       };
     }
@@ -260,20 +387,22 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
     title: "Latency data",
     xaxis: {
       title: "Test duration (s)",
+      tickmode: "array",
+      tickvals: fragments,
     },
     yaxis: {
       title: "Latency (m)",
     },
   });
 
-  // create a bar plot for average latency per fragments
+  // Average latency bar plot
   const avgData = Array.from(latencyData.entries()).map(
     ([totalFragments, values]) => {
       const avg = values.reduce((acc, v) => acc + v[1], 0) / values.length;
       return {
         x: [totalFragments],
         y: [avg / 1000],
-        type: "bar" as const,
+        type: "bar",
         name: `${totalFragments} fragments`,
       };
     }
@@ -283,13 +412,15 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
     title: "Average fragment latency per test",
     xaxis: {
       title: "Number of fragments",
+      tickmode: "array",
+      tickvals: fragments,
     },
     yaxis: {
       title: "Average latency (s)",
     },
   });
 
-  // create a for bar plot for finish latency per fragments
+  // Finish latency bar plot
   const finishData = Array.from(finishLatencyData.entries()).map(
     ([totalFragments, values]) => {
       const avg =
@@ -300,19 +431,124 @@ document.getElementById("plotbtn")?.addEventListener("click", () => {
       return {
         x: [totalFragments],
         y: [avg],
-        type: "bar" as const,
+        type: "bar",
         name: `${totalFragments} fragments`,
       };
     }
   );
 
-  Plotly.newPlot("finishplot", finishData, {
-    title: "Finish latency per test",
-    xaxis: {
-      title: "Number of fragments",
+  // Create box plot data
+  const boxPlotData = Array.from(finishLatencyData.entries()).map(
+    ([totalFragments, values]) => {
+      const latencies = values
+        .filter((x) => x[0] != null && x[1] != null)
+        .map((v) => v[1] - v[0]);
+
+      return {
+        x: Array(latencies.length).fill(totalFragments),
+        y: latencies,
+        type: "box",
+        name: `${totalFragments} fragments`,
+        boxpoints: "outliers",
+        jitter: 0.3,
+        pointpos: 0,
+      };
+    }
+  );
+
+  // Combine both visualizations in a subplot
+  const layout = {
+    title: "Finish Latency",
+    grid: {
+      rows: 2,
+      columns: 1,
+      pattern: "independent",
+      roworder: "top to bottom",
     },
     yaxis: {
-      title: "Finish latency (s)",
+      title: "Finish Latency (s)",
+      domain: [0.55, 1],
+      dtick: 0.04,
+    },
+    yaxis2: {
+      title: "Finish Latency Distribution (s)",
+      domain: [0, 0.45],
+      dtick: 0.01,
+    },
+    xaxis: {
+      title: "Number of fragments",
+      tickmode: "array",
+      tickvals: fragments,
+      domain: [0.1, 1],
+    },
+    xaxis2: {
+      title: "Number of fragments",
+      tickmode: "array",
+      tickvals: fragments,
+      domain: [0.1, 1],
+    },
+    showlegend: false,
+    height: 800,
+  };
+
+  Plotly.newPlot("finishplot", [...finishData, ...boxPlotData], layout);
+
+  // Drop rate bar plot
+  const dropRateData = Array.from(fragmentData.entries()).map(
+    ([totalFragments, testResults]) => ({
+      x: [totalFragments],
+      y: [
+        (testResults.reduce(
+          (acc, test) =>
+            acc + test.filter((fragment) => !fragment).length / test.length,
+          0
+        ) /
+          testResults.length) *
+          100,
+      ],
+      type: "bar",
+      name: `${totalFragments} fragments`,
+    })
+  );
+
+  Plotly.newPlot("dropplot", dropRateData, {
+    title: "Average Drop Rate per Fragment Count",
+    xaxis: {
+      title: "Number of fragments",
+      tickmode: "array",
+      tickvals: fragments,
+    },
+    yaxis: {
+      title: "Drop rate (%)",
+      range: [0, 100],
+    },
+  });
+
+  // Failed test rate bar plot
+  const failedTestRateData = Array.from(fragmentData.entries()).map(
+    ([totalFragments, testResults]) => ({
+      x: [totalFragments],
+      y: [
+        (testResults.filter((test) => test.some((fragment) => !fragment))
+          .length /
+          testResults.length) *
+          100,
+      ],
+      type: "bar",
+      name: `${totalFragments} fragments`,
+    })
+  );
+
+  Plotly.newPlot("failplot", failedTestRateData, {
+    title: "Failed Test Rate per Fragment Count",
+    xaxis: {
+      title: "Number of fragments",
+      tickmode: "array",
+      tickvals: fragments,
+    },
+    yaxis: {
+      title: "Failed test rate (%)",
+      range: [0, 100],
     },
   });
 });

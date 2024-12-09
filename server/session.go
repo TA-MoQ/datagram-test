@@ -138,9 +138,10 @@ func (s *Session) runFakeAudio(ctx context.Context) error {
 func (s *Session) runTests(runWarmup, sleepBetweenFragments bool) {
 	s.runSingleTest(10, runWarmup, sleepBetweenFragments)
 	s.runSingleTest(25, runWarmup, sleepBetweenFragments)
+	s.runSingleTest(30, runWarmup, sleepBetweenFragments)
 	s.runSingleTest(50, runWarmup, sleepBetweenFragments)
-	s.runSingleTest(75, runWarmup, sleepBetweenFragments)
-	s.runSingleTest(100, runWarmup, sleepBetweenFragments)
-	s.runSingleTest(150, runWarmup, sleepBetweenFragments)
-	s.runSingleTest(200, runWarmup, sleepBetweenFragments)
+	// s.runSingleTest(75, runWarmup, sleepBetweenFragments)
+	// s.runSingleTest(100, runWarmup, sleepBetweenFragments)
+	// s.runSingleTest(150, runWarmup, sleepBetweenFragments)
+	// s.runSingleTest(200, runWarmup, sleepBetweenFragments)
 }
